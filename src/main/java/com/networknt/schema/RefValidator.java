@@ -16,16 +16,15 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.networknt.schema.uri.URIFactory;
-import com.networknt.schema.urn.URNFactory;
+import java.net.URI;
+import java.text.MessageFormat;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-import java.text.MessageFormat;
-import java.util.Collections;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.networknt.schema.uri.URIFactory;
+import com.networknt.schema.urn.URNFactory;
 
 public class RefValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(RefValidator.class);
@@ -125,13 +124,13 @@ public class RefValidator extends BaseJsonValidator implements JsonValidator {
         return schemaUrn;
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         if (schema != null) {
             return schema.validate(node, rootNode, at);
         } else {
-            return Collections.emptySet();
+            return null;
         }
     }
 

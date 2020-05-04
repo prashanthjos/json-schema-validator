@@ -16,14 +16,13 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class MaximumValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(MaximumValidator.class);
@@ -105,17 +104,17 @@ public class MaximumValidator extends BaseJsonValidator implements JsonValidator
         }
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         if (!TypeValidator.isNumber(node, config.isTypeLoose())) {
             // maximum only applies to numbers
-            return Collections.emptySet();
+            return null;
         }
 
         if (typedMaximum.crossesThreshold(node)) {
-            return Collections.singleton(buildValidationMessage(at, typedMaximum.thresholdValue()));
+            return constructErrorsNode(buildValidationMessage(at, typedMaximum.thresholdValue()));
         }
-        return Collections.emptySet();
+        return null;
     }
 }

@@ -16,14 +16,19 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * This is the core of json constraint implementation. It parses json constraint
@@ -31,236 +36,270 @@ import java.util.regex.Pattern;
  * constructed, it can be used to validate multiple json data concurrently.
  */
 public class JsonSchema extends BaseJsonValidator {
-    private static final Pattern intPattern = Pattern.compile("^[0-9]+$");
-    protected Map<String, JsonValidator> validators;
-    private final String idKeyword;
-    private final ValidationContext validationContext;
+	private static final Pattern intPattern = Pattern.compile("^[0-9]+$");
+	protected Map<String, JsonValidator> validators;
+	private final String idKeyword;
+	private final ValidationContext validationContext;
 
-    /**
-     * This is the current uri of this schema. This uri could refer to the uri of this schema's file
-     * or it could potentially be a uri that has been altered by an id. An 'id' is able to completely overwrite
-     * the current uri or add onto it. This is necessary so that '$ref's are able to be relative to a
-     * combination of the current schema file's uri and 'id' uris visible to this schema.
-     * <p>
-     * This can be null. If it is null, then the creation of relative uris will fail. However, an absolute
-     * 'id' would still be able to specify an absolute uri.
-     */
-    private final URI currentUri;
+	/**
+	 * This is the current uri of this schema. This uri could refer to the uri of
+	 * this schema's file or it could potentially be a uri that has been altered by
+	 * an id. An 'id' is able to completely overwrite the current uri or add onto
+	 * it. This is necessary so that '$ref's are able to be relative to a
+	 * combination of the current schema file's uri and 'id' uris visible to this
+	 * schema.
+	 * <p>
+	 * This can be null. If it is null, then the creation of relative uris will
+	 * fail. However, an absolute 'id' would still be able to specify an absolute
+	 * uri.
+	 */
+	private final URI currentUri;
 
-    private JsonValidator requiredValidator = null;
+	private JsonValidator requiredValidator = null;
 
-    public JsonSchema(ValidationContext validationContext, URI baseUri, JsonNode schemaNode) {
-        this(validationContext, "#", baseUri, schemaNode, null);
-    }
+	public JsonSchema(ValidationContext validationContext, URI baseUri, JsonNode schemaNode) {
+		this(validationContext, "#", baseUri, schemaNode, null);
+	}
 
-    public JsonSchema(ValidationContext validationContext, String schemaPath, URI currentUri, JsonNode schemaNode,
-                      JsonSchema parent) {
-        this(validationContext, schemaPath, currentUri, schemaNode, parent, false);
-    }
+	public JsonSchema(ValidationContext validationContext, String schemaPath, URI currentUri, JsonNode schemaNode,
+			JsonSchema parent) {
+		this(validationContext, schemaPath, currentUri, schemaNode, parent, false);
+	}
 
-    public JsonSchema(ValidationContext validationContext, URI baseUri, JsonNode schemaNode, boolean suppressSubSchemaRetrieval) {
-        this(validationContext, "#", baseUri, schemaNode, null, suppressSubSchemaRetrieval);
-    }
+	public JsonSchema(ValidationContext validationContext, URI baseUri, JsonNode schemaNode,
+			boolean suppressSubSchemaRetrieval) {
+		this(validationContext, "#", baseUri, schemaNode, null, suppressSubSchemaRetrieval);
+	}
 
-    private JsonSchema(ValidationContext validationContext, String schemaPath, URI currentUri, JsonNode schemaNode,
-                       JsonSchema parent, boolean suppressSubSchemaRetrieval) {
-        super(schemaPath, schemaNode, parent, null, suppressSubSchemaRetrieval,
-                validationContext.getConfig() != null && validationContext.getConfig().isFailFast());
-        this.validationContext = validationContext;
-        this.config = validationContext.getConfig();
-        this.idKeyword = validationContext.getMetaSchema().getIdKeyword();
-        this.currentUri = this.combineCurrentUriWithIds(currentUri, schemaNode);
-    }
+	private JsonSchema(ValidationContext validationContext, String schemaPath, URI currentUri, JsonNode schemaNode,
+			JsonSchema parent, boolean suppressSubSchemaRetrieval) {
+		super(schemaPath, schemaNode, parent, null, suppressSubSchemaRetrieval,
+				validationContext.getConfig() != null && validationContext.getConfig().isFailFast());
+		this.validationContext = validationContext;
+		this.config = validationContext.getConfig();
+		this.idKeyword = validationContext.getMetaSchema().getIdKeyword();
+		this.currentUri = this.combineCurrentUriWithIds(currentUri, schemaNode);
+	}
 
-    JsonSchema initialize() {
-        this.validators = Collections.unmodifiableMap(this.read(getSchemaNode()));
-        return this;
-    }
+	JsonSchema initialize() {
+		this.validators = Collections.unmodifiableMap(this.read(getSchemaNode()));
+		return this;
+	}
 
-    private URI combineCurrentUriWithIds(URI currentUri, JsonNode schemaNode) {
-        final String id = validationContext.resolveSchemaId(schemaNode);
-        if (id == null) {
-            return currentUri;
-        } else if (isUriFragmentWithNoContext(currentUri, id)) {
-            return null;
-        } else {
-            try {
-                return this.validationContext.getURIFactory().create(currentUri, id);
-            } catch (IllegalArgumentException e) {
-                throw new JsonSchemaException(ValidationMessage.of(ValidatorTypeCode.ID.getValue(), ValidatorTypeCode.ID, id, currentUri.toString()));
-            }
-        }
-    }
+	private URI combineCurrentUriWithIds(URI currentUri, JsonNode schemaNode) {
+		final String id = validationContext.resolveSchemaId(schemaNode);
+		if (id == null) {
+			return currentUri;
+		} else if (isUriFragmentWithNoContext(currentUri, id)) {
+			return null;
+		} else {
+			try {
+				return this.validationContext.getURIFactory().create(currentUri, id);
+			} catch (IllegalArgumentException e) {
+				throw new JsonSchemaException(ValidationMessage.of(ValidatorTypeCode.ID.getValue(),
+						ValidatorTypeCode.ID, id, currentUri.toString()));
+			}
+		}
+	}
 
-    private boolean isUriFragmentWithNoContext(URI currentUri, String id) {
-        return id.startsWith("#") && currentUri == null;
-    }
+	private boolean isUriFragmentWithNoContext(URI currentUri, String id) {
+		return id.startsWith("#") && currentUri == null;
+	}
 
-    public URI getCurrentUri() {
-        return this.currentUri;
-    }
+	public URI getCurrentUri() {
+		return this.currentUri;
+	}
 
-    /**
-     * Find the schema node for $ref attribute.
-     *
-     * @param ref String
-     * @return JsonNode
-     */
-    public JsonNode getRefSchemaNode(String ref) {
-        JsonSchema schema = findAncestor();
-        JsonNode node = schema.getSchemaNode();
+	/**
+	 * Find the schema node for $ref attribute.
+	 *
+	 * @param ref String
+	 * @return JsonNode
+	 */
+	public JsonNode getRefSchemaNode(String ref) {
+		JsonSchema schema = findAncestor();
+		JsonNode node = schema.getSchemaNode();
 
-        if (ref.startsWith("#/")) {
-            // handle local ref
-            String[] keys = ref.substring(2).split("/");
-            for (String key : keys) {
-                try {
-                    key = URLDecoder.decode(key, "utf-8");
-                } catch (UnsupportedEncodingException e) {
-                }
-                Matcher matcher = intPattern.matcher(key);
-                if (matcher.matches()) {
-                    node = node.get(Integer.parseInt(key));
-                } else {
-                    node = node.get(key);
-                }
-                if (node == null) {
-                    node = handleNullNode(ref, schema);
-                }
-                if (node == null) {
-                    break;
-                }
-            }
-        } else if (ref.startsWith("#") && ref.length() > 1) {
-            node = getNodeById(ref, node);
-            if (node == null) {
-                node = handleNullNode(ref, schema);
-            }
-        }
-        return node;
-    }
+		if (ref.startsWith("#/")) {
+			// handle local ref
+			String[] keys = ref.substring(2).split("/");
+			for (String key : keys) {
+				try {
+					key = URLDecoder.decode(key, "utf-8");
+				} catch (UnsupportedEncodingException e) {
+				}
+				Matcher matcher = intPattern.matcher(key);
+				if (matcher.matches()) {
+					node = node.get(Integer.parseInt(key));
+				} else {
+					node = node.get(key);
+				}
+				if (node == null) {
+					node = handleNullNode(ref, schema);
+				}
+				if (node == null) {
+					break;
+				}
+			}
+		} else if (ref.startsWith("#") && ref.length() > 1) {
+			node = getNodeById(ref, node);
+			if (node == null) {
+				node = handleNullNode(ref, schema);
+			}
+		}
+		return node;
+	}
 
-    public JsonSchema findAncestor() {
-        JsonSchema ancestor = this;
-        if (this.getParentSchema() != null) {
-            ancestor = this.getParentSchema().findAncestor();
-        }
-        return ancestor;
-    }
+	public JsonSchema findAncestor() {
+		JsonSchema ancestor = this;
+		if (this.getParentSchema() != null) {
+			ancestor = this.getParentSchema().findAncestor();
+		}
+		return ancestor;
+	}
 
-    private JsonNode handleNullNode(String ref, JsonSchema schema) {
-        JsonSchema subSchema = schema.fetchSubSchemaNode(validationContext);
-        if (subSchema != null) {
-            return subSchema.getRefSchemaNode(ref);
-        }
-        return null;
-    }
+	private JsonNode handleNullNode(String ref, JsonSchema schema) {
+		JsonSchema subSchema = schema.fetchSubSchemaNode(validationContext);
+		if (subSchema != null) {
+			return subSchema.getRefSchemaNode(ref);
+		}
+		return null;
+	}
 
-    private JsonNode getNodeById(String ref, JsonNode node) {
-        if (nodeContainsRef(ref, node)) {
-            return node;
-        } else {
-            Iterator<JsonNode> children = node.elements();
-            while (children.hasNext()) {
-                JsonNode refNode = getNodeById(ref, children.next());
-                if (refNode != null) {
-                    return refNode;
-                }
-            }
-        }
-        return null;
-    }
+	private JsonNode getNodeById(String ref, JsonNode node) {
+		if (nodeContainsRef(ref, node)) {
+			return node;
+		} else {
+			Iterator<JsonNode> children = node.elements();
+			while (children.hasNext()) {
+				JsonNode refNode = getNodeById(ref, children.next());
+				if (refNode != null) {
+					return refNode;
+				}
+			}
+		}
+		return null;
+	}
 
-    private boolean nodeContainsRef(String ref, JsonNode node) {
-        JsonNode id = node.get(idKeyword);
-        if (id != null) {
-            return ref.equals(id.asText());
-        }
-        return false;
-    }
+	private boolean nodeContainsRef(String ref, JsonNode node) {
+		JsonNode id = node.get(idKeyword);
+		if (id != null) {
+			return ref.equals(id.asText());
+		}
+		return false;
+	}
 
-    private Map<String, JsonValidator> read(JsonNode schemaNode) {
-        Map<String, JsonValidator> validators = new HashMap<String, JsonValidator>();
-        if (schemaNode.isBoolean()) {
-            if (schemaNode.booleanValue()) {
-                JsonValidator validator = validationContext.newValidator(getSchemaPath(), "true", schemaNode, this);
-                validators.put(getSchemaPath() + "/true", validator);
-            } else {
-                JsonValidator validator = validationContext.newValidator(getSchemaPath(), "false", schemaNode, this);
-                validators.put(getSchemaPath() + "/false", validator);
-            }
-        } else {
-            Iterator<String> pnames = schemaNode.fieldNames();
-            while (pnames.hasNext()) {
-                String pname = pnames.next();
-                JsonNode nodeToUse = pname.equals("if") ? schemaNode : schemaNode.get(pname);
+	private Map<String, JsonValidator> read(JsonNode schemaNode) {
+		Map<String, JsonValidator> validators = new HashMap<String, JsonValidator>();
+		if (schemaNode.isBoolean()) {
+			if (schemaNode.booleanValue()) {
+				JsonValidator validator = validationContext.newValidator(getSchemaPath(), "true", schemaNode, this);
+				validators.put(getSchemaPath() + "/true", validator);
+			} else {
+				JsonValidator validator = validationContext.newValidator(getSchemaPath(), "false", schemaNode, this);
+				validators.put(getSchemaPath() + "/false", validator);
+			}
+		} else {
+			Iterator<String> pnames = schemaNode.fieldNames();
+			while (pnames.hasNext()) {
+				String pname = pnames.next();
+				JsonNode nodeToUse = pname.equals("if") ? schemaNode : schemaNode.get(pname);
 
-                JsonValidator validator = validationContext.newValidator(getSchemaPath(), pname, nodeToUse, this);
-                if (validator != null) {
-                    validators.put(getSchemaPath() + "/" + pname, validator);
+				JsonValidator validator = validationContext.newValidator(getSchemaPath(), pname, nodeToUse, this);
+				if (validator != null) {
+					validators.put(getSchemaPath() + "/" + pname, validator);
 
-                    if (pname.equals("required"))
-                        requiredValidator = validator;
-                }
+					if (pname.equals("required"))
+						requiredValidator = validator;
+				}
 
-            }
-        }
-        return validators;
-    }
+			}
+		}
+		return validators;
+	}
 
-    public Set<ValidationMessage> validate(JsonNode jsonNode, JsonNode rootNode, String at) {
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
-        for (JsonValidator v : validators.values()) {
-            errors.addAll(v.validate(jsonNode, rootNode, at));
-        }
-        return errors;
-    }
+	public JsonNode validate(JsonNode node) {
+		return validate(node, node, AT_ROOT);
+	}
 
-    public ValidationResult validateAndCollect(JsonNode node) {
-        return validateAndCollect(node, node, AT_ROOT);
-    }
+	public JsonNode validate(JsonNode jsonNode, JsonNode rootNode, String at) {
+		ObjectNode parentErrorsHolder = null;
+		ArrayNode childErrorsHolder = objectMapper.createArrayNode();
+		// Run all validators and look for validation errors.
+		for (JsonValidator v : validators.values()) {
+			JsonNode errorsHolder = v.validate(jsonNode, rootNode, at);
+			if (errorsHolder != null) {
+				// If the "errors" key is present it means these errors are created from child
+				// node validators.
+				// For example a "properties" keyword recursively calls the validate method to
+				// return the "errors" key with all errors collated.
+				if (errorsHolder.get("errors") != null) {
+					childErrorsHolder.addAll((ArrayNode) errorsHolder.get("errors"));
+				} else {
+					// Errors created by the validators attached to this node.
+					childErrorsHolder.addAll((ArrayNode) errorsHolder);
+					// This flag indicates that there was a direct validator that created the error
+					// node.
+				}
+			}
+		}
+		// If no errors for this node are found then create a valid node.
+		parentErrorsHolder = createParentValidationNode(jsonNode, at, childErrorsHolder);
+		if (childErrorsHolder.get("errors") == null) {
+			if (childErrorsHolder.size() > 0) {
+				parentErrorsHolder.set("errors", childErrorsHolder);
+			}
+		} else if (childErrorsHolder.get("errors").size() > 0) {
+			parentErrorsHolder.set("errors", childErrorsHolder.get("errors"));
+		}
 
+		return parentErrorsHolder;
+	}
 
-    /**
-     * This method both validates and collects the data in a CollectionContext.
-     *
-     * @param jsonNode JsonNode
-     * @param rootNode JsonNode
-     * @param at String path
-     * @return ValidationResult
-     */
-    protected ValidationResult validateAndCollect(JsonNode jsonNode, JsonNode rootNode, String at) {
-        try {
-            // Create the collector context object.
-            CollectorContext collectorContext = new CollectorContext();
-            // Set the collector context in thread info, this is unique for every thread.
-            ThreadInfo.set(CollectorContext.COLLECTOR_CONTEXT_THREAD_LOCAL_KEY, collectorContext);
-            Set<ValidationMessage> errors = validate(jsonNode, rootNode, at);
-            // Load all the data from collectors into the context.
-            collectorContext.loadCollectors();
-            // Collect errors and collector context into validation result.
-            ValidationResult validationResult = new ValidationResult(errors, collectorContext);
-            return validationResult;
-        } finally {
-            ThreadInfo.remove(CollectorContext.COLLECTOR_CONTEXT_THREAD_LOCAL_KEY);
-        }
-    }
+	public ValidationResult validateAndCollect(JsonNode node) {
+		return validateAndCollect(node, node, AT_ROOT);
+	}
 
-    @Override
-    public String toString() {
-        return "\"" + getSchemaPath() + "\" : " + getSchemaNode().toString();
-    }
+	/**
+	 * This method both validates and collects the data in a CollectionContext.
+	 *
+	 * @param jsonNode JsonNode
+	 * @param rootNode JsonNode
+	 * @param at       String path
+	 * @return ValidationResult
+	 */
+	protected ValidationResult validateAndCollect(JsonNode jsonNode, JsonNode rootNode, String at) {
+		try {
+			// Create the collector context object.
+			CollectorContext collectorContext = new CollectorContext();
+			// Set the collector context in thread info, this is unique for every thread.
+			ThreadInfo.set(CollectorContext.COLLECTOR_CONTEXT_THREAD_LOCAL_KEY, collectorContext);
+			JsonNode errors = validate(jsonNode, rootNode, at);
+			// Load all the data from collectors into the context.
+			collectorContext.loadCollectors();
+			// Collect errors and collector context into validation result.
+			ValidationResult validationResult = new ValidationResult(errors, collectorContext);
+			return validationResult;
+		} finally {
+			ThreadInfo.remove(CollectorContext.COLLECTOR_CONTEXT_THREAD_LOCAL_KEY);
+		}
+	}
 
-    public boolean hasRequiredValidator() {
-        return requiredValidator != null ? true : false;
-    }
+	@Override
+	public String toString() {
+		return "\"" + getSchemaPath() + "\" : " + getSchemaNode().toString();
+	}
 
-    public JsonValidator getRequiredValidator() {
-        return requiredValidator;
-    }
+	public boolean hasRequiredValidator() {
+		return requiredValidator != null ? true : false;
+	}
 
-    public Map<String, JsonValidator> getValidators() {
-        return validators;
-    }
+	public JsonValidator getRequiredValidator() {
+		return requiredValidator;
+	}
+
+	public Map<String, JsonValidator> getValidators() {
+		return validators;
+	}
 
 }

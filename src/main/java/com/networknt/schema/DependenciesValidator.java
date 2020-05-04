@@ -17,6 +17,8 @@
 package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,10 +54,10 @@ public class DependenciesValidator extends BaseJsonValidator implements JsonVali
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
 
         for (Iterator<String> it = node.fieldNames(); it.hasNext(); ) {
             String pname = it.next();
@@ -63,17 +65,17 @@ public class DependenciesValidator extends BaseJsonValidator implements JsonVali
             if (deps != null && !deps.isEmpty()) {
                 for (String field : deps) {
                     if (node.get(field) == null) {
-                        errors.add(buildValidationMessage(at, propertyDeps.toString()));
+                        errors.add(constructErrorsNode(buildValidationMessage(at, propertyDeps.toString())));
                     }
                 }
             }
             JsonSchema schema = schemaDeps.get(pname);
             if (schema != null) {
-                errors.addAll(schema.validate(node, rootNode, at));
+                errors.add(schema.validate(node, rootNode, at));
             }
         }
 
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
 }

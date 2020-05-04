@@ -16,13 +16,13 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class UniqueItemsValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(UniqueItemsValidator.class);
@@ -38,19 +38,19 @@ public class UniqueItemsValidator extends BaseJsonValidator implements JsonValid
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         if (unique) {
             Set<JsonNode> set = new HashSet<JsonNode>();
             for (JsonNode n : node) {
                 if (!set.add(n)) {
-                    return Collections.singleton(buildValidationMessage(at));
+                    return constructErrorsNode(buildValidationMessage(at));
                 }
             }
         }
 
-        return Collections.emptySet();
+        return null;
     }
 
 }

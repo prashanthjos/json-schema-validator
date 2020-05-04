@@ -20,6 +20,10 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonInclude(value = Include.NON_NULL)
 public class ValidationMessage {
     private String type;
     private String code;
@@ -27,6 +31,7 @@ public class ValidationMessage {
     private String[] arguments;
     private Map<String, Object> details;
     private String message;
+    private boolean valid = false;
 
     ValidationMessage() {
     }
@@ -125,7 +130,15 @@ public class ValidationMessage {
         return builder.build();
     }
 
-    public static class Builder {
+    public boolean isValid() {
+		return valid;
+	}
+
+	public void setValid(boolean valid) {
+		this.valid = valid;
+	}
+
+	public static class Builder {
         private String type;
         private String code;
         private String path;

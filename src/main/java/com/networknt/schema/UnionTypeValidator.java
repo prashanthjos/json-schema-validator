@@ -16,14 +16,13 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class UnionTypeValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(UnionTypeValidator.class);
@@ -63,7 +62,7 @@ public class UnionTypeValidator extends BaseJsonValidator implements JsonValidat
         error = errorBuilder.toString();
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         JsonType nodeType = TypeFactory.getValueNodeType(node);
@@ -71,7 +70,7 @@ public class UnionTypeValidator extends BaseJsonValidator implements JsonValidat
         boolean valid = false;
 
         for (JsonValidator schema : schemas) {
-            Set<ValidationMessage> errors = schema.validate(node, rootNode, at);
+            JsonNode errors = schema.validate(node, rootNode, at);
             if (errors == null || errors.isEmpty()) {
                 valid = true;
                 break;
@@ -79,10 +78,10 @@ public class UnionTypeValidator extends BaseJsonValidator implements JsonValidat
         }
 
         if (!valid) {
-            return Collections.singleton(buildValidationMessage(at, nodeType.toString(), error));
+            return constructErrorsNode(buildValidationMessage(at, nodeType.toString(), error));
         }
 
-        return Collections.emptySet();
+        return null;
     }
 
 }

@@ -16,14 +16,13 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.regex.PatternSyntaxException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.regex.PatternSyntaxException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class FormatValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(FormatValidator.class);
@@ -36,10 +35,10 @@ public class FormatValidator extends BaseJsonValidator implements JsonValidator 
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+       ArrayNode errors = objectMapper.createArrayNode();
 
         JsonType nodeType = TypeFactory.getValueNodeType(node);
         if (nodeType != JsonType.STRING) {
@@ -49,7 +48,7 @@ public class FormatValidator extends BaseJsonValidator implements JsonValidator 
         if (format != null) {
             try {
                 if (!format.matches(node.textValue())) {
-                    errors.add(buildValidationMessage(at, format.getName(), format.getErrorMessageDescription()));
+                    errors.add(constructErrorsNode(buildValidationMessage(at, format.getName(), format.getErrorMessageDescription())));
                 }
             } catch (PatternSyntaxException pse) {
                 // String is considered valid if pattern is invalid
@@ -57,7 +56,7 @@ public class FormatValidator extends BaseJsonValidator implements JsonValidator 
             }
         }
 
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
 }

@@ -16,14 +16,13 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class ExclusiveMinimumValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(MinimumValidator.class);
@@ -103,18 +102,18 @@ public class ExclusiveMinimumValidator extends BaseJsonValidator implements Json
         }
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         if (!TypeValidator.isNumber(node, config.isTypeLoose())) {
             // minimum only applies to numbers
-            return Collections.emptySet();
+            return null;
         }
 
-        if (typedMinimum.crossesThreshold(node)) {
-            return Collections.singleton(buildValidationMessage(at, typedMinimum.thresholdValue()));
-        }
-        return Collections.emptySet();
+		if (typedMinimum.crossesThreshold(node)) {
+			return constructErrorsNode(buildValidationMessage(at, typedMinimum.thresholdValue()));
+		}
+        return null;
     }
 
 }

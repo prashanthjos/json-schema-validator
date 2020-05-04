@@ -17,6 +17,8 @@
 package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +124,7 @@ public class OneOfValidator extends BaseJsonValidator implements JsonValidator {
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         // this is a complex validator, we set the flag to true
@@ -131,7 +133,7 @@ public class OneOfValidator extends BaseJsonValidator implements JsonValidator {
         validatorState.set(state);
 
         int numberOfValidSchema = 0;
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
 
         // validate that only a single element has been received in the oneOf node
         // validation should not continue, as it contradicts the oneOf requirement of only one
@@ -149,7 +151,7 @@ public class OneOfValidator extends BaseJsonValidator implements JsonValidator {
 
             // get the current validator
             JsonSchema schema = validator.schema;
-            Set<ValidationMessage> schemaErrors = schema.validate(node, rootNode, at);
+            JsonNode schemaErrors = schema.validate(node, rootNode, at);
 
             // check if any validation errors have occurred
             if (schemaErrors.isEmpty()) {
@@ -158,38 +160,38 @@ public class OneOfValidator extends BaseJsonValidator implements JsonValidator {
                     continue;
 
                 numberOfValidSchema++;
-                errors = new LinkedHashSet<ValidationMessage>();
+                errors = objectMapper.createArrayNode();
             } else {
-                errors.addAll(schemaErrors);
+                errors.add(schemaErrors);
             }
         }
 
         // no valid schema has been found after validating all schema validators
         if (numberOfValidSchema == 0) {
-            for (Iterator<ValidationMessage> it = errors.iterator(); it.hasNext(); ) {
-                ValidationMessage msg = it.next();
+            for (Iterator<JsonNode> it = errors.iterator(); it.hasNext(); ) {
+                JsonNode errorNode = it.next();
 
-                if (ValidatorTypeCode.ADDITIONAL_PROPERTIES.getValue().equals(msg.getType())) {
+                if (ValidatorTypeCode.ADDITIONAL_PROPERTIES.getValue().equals(errorNode.get("type").textValue())) {
                     it.remove();
                 }
             }
             if (errors.isEmpty()) {
                 // ensure there is always an error reported if number of valid schemas is 0
-                errors.add(buildValidationMessage(at, ""));
+                errors.add(constructErrorsNode(buildValidationMessage(at, "")));
             }
         } else {
-            errors.clear();
+        	errors = objectMapper.createArrayNode();
         }
 
         // validated upfront
         if (numberOfValidSchema > 1) {
-            errors = Collections.singleton(buildValidationMessage(at, ""));
+            errors = constructErrorsNode(buildValidationMessage(at, ""));
         }
 
         // reset the ValidatorState object in the ThreadLocal
         validatorState.remove();
 
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
 }

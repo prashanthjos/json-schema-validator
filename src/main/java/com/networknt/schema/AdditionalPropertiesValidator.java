@@ -16,13 +16,19 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class AdditionalPropertiesValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(AdditionalPropertiesValidator.class);
@@ -65,10 +71,9 @@ public class AdditionalPropertiesValidator extends BaseJsonValidator implements 
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         if (logger.isDebugEnabled()) debug(logger, node, rootNode, at);
-
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
         if (!node.isObject()) {
             // ignore no object
             return errors;
@@ -91,15 +96,15 @@ public class AdditionalPropertiesValidator extends BaseJsonValidator implements 
 
             if (!allowedProperties.contains(pname) && !handledByPatternProperties) {
                 if (!allowAdditionalProperties) {
-                    errors.add(buildValidationMessage(at, pname));
+                    errors.addAll(constructErrorsNode(buildValidationMessage(at, pname)));
                 } else {
                     if (additionalPropertiesSchema != null) {
-                        errors.addAll(additionalPropertiesSchema.validate(node.get(pname), rootNode, at + "." + pname));
+                        errors.add(additionalPropertiesSchema.validate(node.get(pname), rootNode, at + "." + pname));
                     }
                 }
             }
         }
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
 }

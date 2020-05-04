@@ -15,13 +15,11 @@
  */
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class ConstValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(ConstValidator.class);
@@ -32,17 +30,17 @@ public class ConstValidator extends BaseJsonValidator implements JsonValidator {
         this.schemaNode = schemaNode;
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
-
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        
+        ArrayNode errors = objectMapper.createArrayNode();
         if (schemaNode.isNumber() && node.isNumber()) {
             if (schemaNode.decimalValue().compareTo(node.decimalValue()) != 0) {
-                errors.add(buildValidationMessage(at, schemaNode.asText()));
+                errors.add(constructErrorsNode(buildValidationMessage(at, schemaNode.asText())));
             }
         } else if (!schemaNode.equals(node)) {
-            errors.add(buildValidationMessage(at, schemaNode.asText()));
+            errors.add(constructErrorsNode(buildValidationMessage(at, schemaNode.asText())));
         }
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 }

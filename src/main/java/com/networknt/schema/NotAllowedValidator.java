@@ -16,11 +16,14 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class NotAllowedValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(NotAllowedValidator.class);
@@ -40,20 +43,20 @@ public class NotAllowedValidator extends BaseJsonValidator implements JsonValida
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
 
         for (String fieldName : fieldNames) {
             JsonNode propertyNode = node.get(fieldName);
 
             if (propertyNode != null) {
-                errors.add(buildValidationMessage(at, fieldName));
+                errors.add(constructErrorsNode(buildValidationMessage(at, fieldName)));
             }
         }
 
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
 }

@@ -16,13 +16,12 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.math.BigDecimal;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class MultipleOfValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(MultipleOfValidator.class);
@@ -39,7 +38,7 @@ public class MultipleOfValidator extends BaseJsonValidator implements JsonValida
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         if (node.isNumber()) {
@@ -49,12 +48,12 @@ public class MultipleOfValidator extends BaseJsonValidator implements JsonValida
                 BigDecimal accurateDividend = new BigDecimal(String.valueOf(nodeValue));
                 BigDecimal accurateDivisor = new BigDecimal(String.valueOf(divisor));
                 if (accurateDividend.divideAndRemainder(accurateDivisor)[1].abs().compareTo(BigDecimal.ZERO) > 0) {
-                    return Collections.singleton(buildValidationMessage(at, "" + divisor));
+                    return constructErrorsNode(buildValidationMessage(at, "" + divisor));
                 }
             }
         }
 
-        return Collections.emptySet();
+        return null;
     }
 
 }

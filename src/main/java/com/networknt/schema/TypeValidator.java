@@ -16,12 +16,10 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class TypeValidator extends BaseJsonValidator implements JsonValidator {
     private static final String TYPE = "type";
@@ -99,7 +97,7 @@ public class TypeValidator extends BaseJsonValidator implements JsonValidator {
         return true;
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         if (schemaType == JsonType.UNION) {
@@ -108,9 +106,9 @@ public class TypeValidator extends BaseJsonValidator implements JsonValidator {
 
         if (!equalsToSchemaType(node)) {
             JsonType nodeType = TypeFactory.getValueNodeType(node);
-            return Collections.singleton(buildValidationMessage(at, nodeType.toString(), schemaType.toString()));
+            return constructErrorsNode(buildValidationMessage(at, nodeType.toString(), schemaType.toString()));
         }
-        return Collections.emptySet();
+        return null;
     }
 
     public static boolean isInteger(String str) {

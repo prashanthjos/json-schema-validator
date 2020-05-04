@@ -17,6 +17,8 @@
 package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +41,10 @@ public class ReadOnlyValidator extends BaseJsonValidator implements JsonValidato
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
 
         for (String fieldName : fieldNames) {
             JsonNode propertyNode = node.get(fieldName);
@@ -56,11 +58,11 @@ public class ReadOnlyValidator extends BaseJsonValidator implements JsonValidato
 
             boolean theSame = propertyNode != null && originalNode != null && propertyNode.equals(originalNode);
             if (!theSame) {
-                errors.add(buildValidationMessage(at));
+                errors.add(constructErrorsNode(buildValidationMessage(at)));
             }
         }
 
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
     private JsonNode getNode(String datapath, JsonNode data) {

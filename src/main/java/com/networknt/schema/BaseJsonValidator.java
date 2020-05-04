@@ -16,12 +16,15 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.net.URI;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
-import java.net.URI;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public abstract class BaseJsonValidator implements JsonValidator {
     private String schemaPath;
@@ -30,6 +33,7 @@ public abstract class BaseJsonValidator implements JsonValidator {
     private boolean suppressSubSchemaRetrieval;
     private ValidatorTypeCode validatorType;
     private ErrorMessageType errorMessageType;
+	protected ObjectMapper objectMapper = new ObjectMapper();
     /**
      * SchemaValidatorsConfig can only get and set in validationContext
      */
@@ -96,7 +100,7 @@ public abstract class BaseJsonValidator implements JsonValidator {
         }
     }
 
-    public Set<ValidationMessage> validate(JsonNode node) {
+    public JsonNode validate(JsonNode node) {
         return validate(node, node, AT_ROOT);
     }
 
@@ -148,4 +152,32 @@ public abstract class BaseJsonValidator implements JsonValidator {
         }
         return null;
     }
+    
+	protected ArrayNode constructErrorsNode(ValidationMessage... validationMessages) {
+		ArrayNode jsonArray = null;
+		if (validationMessages != null && validationMessages.length > 0) {
+			jsonArray = objectMapper.valueToTree(validationMessages);
+		}
+		return jsonArray;
+	}
+	
+	protected ObjectNode createParentValidationNode(JsonNode jsonNode, String at, JsonNode childErrorsHolder) {
+		boolean isValid = true;
+		for (JsonNode childErrorHolder : childErrorsHolder) {
+			if (childErrorHolder.get("valid") != null && !childErrorHolder.get("valid").asBoolean()) {
+				isValid = false;
+				break;
+			}
+		}
+		ValidationMessage message = new ValidationMessage();
+		message.setValid(isValid);
+		message.setPath(at);
+		return objectMapper.valueToTree(message);
+	}
+	
+//	protected JsonNode constructErrorArrayWrapper(JsonNode errors) {
+//		ObjectNode errorsHolder = objectMapper.createObjectNode();
+//		errorsHolder.set("errors", errors);
+//		return errorsHolder;
+//	}
 }

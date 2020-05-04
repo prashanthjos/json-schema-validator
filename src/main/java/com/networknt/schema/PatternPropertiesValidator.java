@@ -17,6 +17,8 @@
 package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,13 +45,13 @@ public class PatternPropertiesValidator extends BaseJsonValidator implements Jso
         }
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
 
         if (!node.isObject()) {
-            return errors;
+            return null;
         }
 
         Iterator<String> names = node.fieldNames();
@@ -59,11 +61,11 @@ public class PatternPropertiesValidator extends BaseJsonValidator implements Jso
             for (Map.Entry<Pattern, JsonSchema> entry : schemas.entrySet()) {
                 Matcher m = entry.getKey().matcher(name);
                 if (m.find()) {
-                    errors.addAll(entry.getValue().validate(n, rootNode, at + "." + name));
+                    errors.add(entry.getValue().validate(n, rootNode, at + "." + name));
                 }
             }
         }
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
 }

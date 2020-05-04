@@ -16,12 +16,10 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class NotValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(RequiredValidator.class);
@@ -36,14 +34,14 @@ public class NotValidator extends BaseJsonValidator implements JsonValidator {
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = schema.validate(node, rootNode, at);
+        JsonNode errors = schema.validate(node, rootNode, at);
         if (errors.isEmpty()) {
-            return Collections.singleton(buildValidationMessage(at, schema.toString()));
+            return constructErrorsNode(buildValidationMessage(at, schema.toString()));
         }
-        return Collections.emptySet();
+        return null;
     }
 
 }

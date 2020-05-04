@@ -16,16 +16,17 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.DecimalNode;
-import com.fasterxml.jackson.databind.node.NullNode;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.DecimalNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 
 public class EnumValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(EnumValidator.class);
@@ -78,16 +79,16 @@ public class EnumValidator extends BaseJsonValidator implements JsonValidator {
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
         if (node.isNumber()) node = DecimalNode.valueOf(node.decimalValue());
         if (!nodes.contains(node) && !(config.isTypeLoose() && isTypeLooseContainsInEnum(node))) {
-            errors.add(buildValidationMessage(at, error));
+            errors.add(constructErrorsNode(buildValidationMessage(at, error)));
         }
 
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
     /**

@@ -17,8 +17,6 @@ package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import java.util.Set;
-
 /**
  * Use this object instead a JsonSchema for references.
  * <p>
@@ -45,7 +43,7 @@ public class JsonSchemaRef {
         this.schema = schema;
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         return schema.validate(node, rootNode, at);
     }
 

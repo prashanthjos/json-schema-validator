@@ -16,12 +16,10 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class ContainsValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(ContainsValidator.class);
@@ -38,13 +36,13 @@ public class ContainsValidator extends BaseJsonValidator implements JsonValidato
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
 
         if (!node.isArray()) {
             // ignores non-arrays
-            return Collections.emptySet();
+            return null;
         }
 
         if (node.isEmpty()) {
@@ -55,7 +53,7 @@ public class ContainsValidator extends BaseJsonValidator implements JsonValidato
             for (JsonNode n : node) {
                 if (schema.validate(n, rootNode, at + "[" + i + "]").isEmpty()) {
                     //Short circuit on first success
-                    return Collections.emptySet();
+                    return null;
                 }
                 i++;
             }
@@ -63,11 +61,11 @@ public class ContainsValidator extends BaseJsonValidator implements JsonValidato
             return buildErrorMessageSet(at);
         }
 
-        return Collections.emptySet();
+        return null;
     }
 
-    private Set<ValidationMessage> buildErrorMessageSet(String at) {
-        return Collections.singleton(buildValidationMessage(at, schema.getSchemaNode().toString()));
-    }
+	private JsonNode buildErrorMessageSet(String at) {
+		return constructErrorsNode(buildValidationMessage(at, schema.getSchemaNode().toString()));
+	}
 
 }

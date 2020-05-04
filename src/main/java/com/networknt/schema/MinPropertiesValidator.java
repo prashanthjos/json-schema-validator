@@ -16,12 +16,10 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class MinPropertiesValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(MinPropertiesValidator.class);
@@ -38,16 +36,16 @@ public class MinPropertiesValidator extends BaseJsonValidator implements JsonVal
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         if (node.isObject()) {
             if (node.size() < min) {
-                return Collections.singleton(buildValidationMessage(at, "" + min));
+                return constructErrorsNode(buildValidationMessage(at, "" + min));
             }
         }
 
-        return Collections.emptySet();
+        return null;
     }
 
 }

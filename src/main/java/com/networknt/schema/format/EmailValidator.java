@@ -16,16 +16,21 @@
  */
 package com.networknt.schema.format;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.networknt.schema.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.networknt.schema.BaseJsonValidator;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonType;
+import com.networknt.schema.JsonValidator;
+import com.networknt.schema.TypeFactory;
+import com.networknt.schema.ValidationContext;
+import com.networknt.schema.ValidatorTypeCode;
 
 /**
  * <p>Perform email validations.</p>
@@ -142,19 +147,19 @@ public class EmailValidator extends BaseJsonValidator implements JsonValidator {
     }
 
     @Override
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
 
         JsonType nodeType = TypeFactory.getValueNodeType(node);
         if (nodeType != JsonType.STRING) {
             return errors;
         }
         if (!isValid(node.textValue())) {
-            errors.add(buildValidationMessage(at, node.textValue(), formatName));
+            errors.add(constructErrorsNode(buildValidationMessage(at, node.textValue(), formatName)));
         }
-        return Collections.unmodifiableSet(errors);
+        return errors;
 
     }
 }

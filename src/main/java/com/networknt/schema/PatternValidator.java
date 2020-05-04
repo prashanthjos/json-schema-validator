@@ -17,6 +17,8 @@
 package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import org.jcodings.specific.UTF8Encoding;
 import org.joni.Option;
 import org.joni.Regex;
@@ -81,22 +83,23 @@ public class PatternValidator extends BaseJsonValidator implements JsonValidator
 
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
-
+        ArrayNode errors = objectMapper.createArrayNode();
         JsonType nodeType = TypeFactory.getValueNodeType(node);
         if (nodeType != JsonType.STRING) {
-            return Collections.emptySet();
+            return null;
         }
 
         try {
             if (!matches(node.asText())) {
-                return Collections.singleton(buildValidationMessage(at, pattern));
+                errors.add(constructErrorsNode(buildValidationMessage(at, pattern)));
+                return errors;
             }
         } catch (PatternSyntaxException pse) {
             logger.error("Failed to apply pattern on " + at + ": Invalid syntax [" + pattern + "]", pse);
         }
 
-        return Collections.emptySet();
+        return null;
     }
 }

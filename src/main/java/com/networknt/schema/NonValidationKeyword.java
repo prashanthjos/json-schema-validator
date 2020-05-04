@@ -18,9 +18,6 @@ package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import java.util.Collections;
-import java.util.Set;
-
 /**
  * Used for Keywords that have no validation aspect, but are part of the metaschema.
  */
@@ -32,8 +29,8 @@ public class NonValidationKeyword extends AbstractKeyword {
         }
 
         @Override
-        public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
-            return Collections.emptySet();
+        public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
+            return null;
         }
     }
 

@@ -16,12 +16,10 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class MaxPropertiesValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(MaxPropertiesValidator.class);
@@ -38,16 +36,16 @@ public class MaxPropertiesValidator extends BaseJsonValidator implements JsonVal
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
         if (node.isObject()) {
             if (node.size() > max) {
-                return Collections.singleton(buildValidationMessage(at, "" + max));
+                return constructErrorsNode(buildValidationMessage(at, "" + max));
             }
         }
 
-        return Collections.emptySet();
+        return null;
     }
 
 }

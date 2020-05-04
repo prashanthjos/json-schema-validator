@@ -17,6 +17,8 @@
 package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,29 +38,31 @@ public class AnyOfValidator extends BaseJsonValidator implements JsonValidator {
         }
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
-        debug(logger, node, rootNode, at);
+	public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
+		debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> allErrors = new LinkedHashSet<ValidationMessage>();
-        String typeValidatorName = "anyOf/type";
+		ArrayNode allErrors = objectMapper.createArrayNode();
+		String typeValidatorName = "anyOf/type";
 
-        for (JsonSchema schema : schemas) {
-            if (schema.validators.containsKey(typeValidatorName)) {
-                TypeValidator typeValidator = ((TypeValidator) schema.validators.get(typeValidatorName));
-                //If schema has type validator and node type doesn't match with schemaType then ignore it
-                //For union type, it is must to call TypeValidator
-                if (typeValidator.getSchemaType() != JsonType.UNION && !typeValidator.equalsToSchemaType(node)) {
-                    allErrors.add(buildValidationMessage(at, typeValidator.getSchemaType().toString()));
-                    continue;
-                }
-            }
-            Set<ValidationMessage> errors = schema.validate(node, rootNode, at);
-            if (errors.isEmpty()) {
-                return errors;
-            }
-            allErrors.addAll(errors);
-        }
-        return Collections.unmodifiableSet(allErrors);
-    }
+		for (JsonSchema schema : schemas) {
+			if (schema.validators.containsKey(typeValidatorName)) {
+				TypeValidator typeValidator = ((TypeValidator) schema.validators.get(typeValidatorName));
+				// If schema has type validator and node type doesn't match with schemaType then
+				// ignore it
+				// For union type, it is must to call TypeValidator
+				if (typeValidator.getSchemaType() != JsonType.UNION && !typeValidator.equalsToSchemaType(node)) {
+					allErrors.add(
+							constructErrorsNode(buildValidationMessage(at, typeValidator.getSchemaType().toString())));
+					continue;
+				}
+			}
+			JsonNode errors = schema.validate(node, rootNode, at);
+			if (errors.isEmpty()) {
+				return errors;
+			}
+			allErrors.add(errors);
+		}
+		return allErrors;
+	}
 
 }

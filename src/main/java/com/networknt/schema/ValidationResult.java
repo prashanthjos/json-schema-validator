@@ -15,22 +15,22 @@
  */
 package com.networknt.schema;
 
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class ValidationResult {
 
-    private Set<ValidationMessage> validationMessages;
+    private JsonNode errorNode;
 
     private CollectorContext collectorContext;
 
-    public ValidationResult(Set<ValidationMessage> validationMessages, CollectorContext collectorContext) {
+    public ValidationResult(JsonNode errorNode, CollectorContext collectorContext) {
         super();
-        this.validationMessages = validationMessages;
+        this.errorNode = errorNode;
         this.collectorContext = collectorContext;
     }
 
-    public Set<ValidationMessage> getValidationMessages() {
-        return validationMessages;
+    public JsonNode getErrorNode() {
+        return errorNode;
     }
 
     public CollectorContext getCollectorContext() {

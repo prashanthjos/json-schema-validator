@@ -15,13 +15,11 @@
  */
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class FalseValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(FalseValidator.class);
@@ -30,11 +28,11 @@ public class FalseValidator extends BaseJsonValidator implements JsonValidator {
         super(schemaPath, schemaNode, parentSchema, ValidatorTypeCode.FALSE, validationContext);
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
         // For the false validator, it is always not valid
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
-        errors.add(buildValidationMessage(at));
-        return Collections.unmodifiableSet(errors);
+        ArrayNode errors = objectMapper.createArrayNode();
+        errors.add(constructErrorsNode(buildValidationMessage(at)));
+        return errors;
     }
 }

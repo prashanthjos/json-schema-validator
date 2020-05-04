@@ -18,8 +18,6 @@ package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import java.util.Set;
-
 /**
  * Standard json validator interface, implemented by all validators and JsonSchema.
  */
@@ -34,7 +32,7 @@ public interface JsonValidator {
      * @return A list of ValidationMessage if there is any validation error, or an empty
      * list if there is no error.
      */
-    Set<ValidationMessage> validate(JsonNode rootNode);
+    JsonNode validate(JsonNode rootNode);
 
     /**
      * Validate the given JsonNode, the given node is the child node of the root node at given
@@ -46,6 +44,6 @@ public interface JsonValidator {
      * @return A list of ValidationMessage if there is any validation error, or an empty
      * list if there is no error.
      */
-    Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at);
+    JsonNode validate(JsonNode node, JsonNode rootNode, String at);
 
 }

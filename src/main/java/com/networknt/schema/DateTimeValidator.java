@@ -16,17 +16,16 @@
 
 package com.networknt.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 public class DateTimeValidator extends BaseJsonValidator implements JsonValidator {
     private static final Logger logger = LoggerFactory.getLogger(DateTimeValidator.class);
@@ -46,19 +45,19 @@ public class DateTimeValidator extends BaseJsonValidator implements JsonValidato
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
 
         JsonType nodeType = TypeFactory.getValueNodeType(node);
         if (nodeType != JsonType.STRING) {
             return errors;
         }
         if (!isLegalDateTime(node.textValue())) {
-            errors.add(buildValidationMessage(at, node.textValue(), formatName));
+            errors.add(constructErrorsNode(buildValidationMessage(at, node.textValue(), formatName)));
         }
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
     private boolean isLegalDateTime(String string) {

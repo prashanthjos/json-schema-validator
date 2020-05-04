@@ -29,7 +29,7 @@ public abstract class AbstractJsonValidator implements JsonValidator {
         this.keyword = keyword;
     }
 
-    public Set<ValidationMessage> validate(JsonNode node) {
+    public JsonNode validate(JsonNode node) {
         return validate(node, node, AT_ROOT);
     }
 

@@ -17,6 +17,8 @@
 package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,10 +39,10 @@ public class PropertiesValidator extends BaseJsonValidator implements JsonValida
         }
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
 
         // get the Validator state object storing validation data
         ValidatorState state = validatorState.get();
@@ -65,7 +67,7 @@ public class PropertiesValidator extends BaseJsonValidator implements JsonValida
                 state.setComplexValidator(false);
 
                 //validate the child element(s)
-                errors.addAll(propertySchema.validate(propertyNode, rootNode, at + "." + entry.getKey()));
+                errors.add(propertySchema.validate(propertyNode, rootNode, at + "." + entry.getKey()));
 
                 // reset the complex flag to the original value before the recursive call
                 state.setComplexValidator(isComplex);
@@ -76,23 +78,23 @@ public class PropertiesValidator extends BaseJsonValidator implements JsonValida
             } else {
                 // check whether the node which has not matched was mandatory or not
                 if (getParentSchema().hasRequiredValidator()) {
-                    Set<ValidationMessage> requiredErrors = getParentSchema().getRequiredValidator().validate(node, rootNode, at);
+                    JsonNode requiredErrors = getParentSchema().getRequiredValidator().validate(node, rootNode, at);
 
                     if (!requiredErrors.isEmpty()) {
                         // the node was mandatory, decide which behavior to employ when validator has not matched
                         if (state.isComplexValidator()) {
                             // this was a complex validator (ex oneOf) and the node has not been matched
                             state.setMatchedNode(false);
-                            return Collections.unmodifiableSet(new LinkedHashSet<ValidationMessage>());
+                            return null;
                         } else {
-                            errors.addAll(requiredErrors);
+                            errors.add(requiredErrors);
                         }
                     }
                 }
             }
         }
 
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
 }

@@ -17,6 +17,8 @@
 package com.networknt.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,16 +38,16 @@ public class AllOfValidator extends BaseJsonValidator implements JsonValidator {
         }
     }
 
-    public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
+    public JsonNode validate(JsonNode node, JsonNode rootNode, String at) {
         debug(logger, node, rootNode, at);
 
-        Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+        ArrayNode errors = objectMapper.createArrayNode();
 
         for (JsonSchema schema : schemas) {
-            errors.addAll(schema.validate(node, rootNode, at));
+            errors.add(schema.validate(node, rootNode, at));
         }
 
-        return Collections.unmodifiableSet(errors);
+        return errors;
     }
 
 }
