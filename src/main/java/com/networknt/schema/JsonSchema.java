@@ -235,6 +235,7 @@ public class JsonSchema extends BaseJsonValidator {
         return lhs.compareTo(rhs);
     };
 
+
     private String getCustomMessage(JsonNode schemaNode, String pname) {
         final JsonSchema parentSchema = getParentSchema();
         final JsonNode message = getMessageNode(schemaNode, parentSchema);
@@ -253,26 +254,36 @@ public class JsonSchema extends BaseJsonValidator {
         return nodeContainingMessage.get("message");
     }
 
+
     /************************ START OF VALIDATE METHODS **********************************/
 
     @Override
     public Set<ValidationMessage> validate(JsonNode node) {
         Set<ValidationMessage> errors = validate(node, node, AT_ROOT);
-        // Process UnEvaluatedProperties after all the validators are called.
-        errors.addAll(processUnEvaluatedProperties(node, node, AT_ROOT, true, true));
         return errors;
     }
 
     public Set<ValidationMessage> validate(JsonNode jsonNode, JsonNode rootNode, String at) {
+
         SchemaValidatorsConfig config = validationContext.getConfig();
+
         Set<ValidationMessage> errors = new LinkedHashSet<ValidationMessage>();
+
         // Get the collector context.
         getCollectorContext();
+
         // Set the walkEnabled and isValidationEnabled flag in internal validator state.
         setValidatorState(false, true);
+
         for (JsonValidator v : getValidators().values()) {
             errors.addAll(v.validate(jsonNode, rootNode, at));
         }
+
+        // Process UnEvaluatedProperties after all the validators are called if there are no errors.
+        if (errors.isEmpty()) {
+            errors.addAll(processUnEvaluatedProperties(jsonNode, rootNode, AT_ROOT, true, true));
+        }
+
         if (null != config && config.isOpenAPI3StyleDiscriminators()) {
             ObjectNode discriminator = (ObjectNode) schemaNode.get("discriminator");
             if (null != discriminator) {

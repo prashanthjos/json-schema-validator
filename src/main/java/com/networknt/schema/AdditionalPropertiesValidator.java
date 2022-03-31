@@ -64,6 +64,18 @@ public class AdditionalPropertiesValidator extends BaseJsonValidator implements 
         parseErrorCode(getValidatorType().getErrorCodeKey());
     }
 
+    private void addToEvaluatedProperties(String propertyPath) {
+        Object evaluatedProperties = CollectorContext.getInstance().get(UnEvaluatedPropertiesValidator.EVALUATED_PROPERTIES);
+        List<String> evaluatedPropertiesList = null;
+        if (evaluatedProperties == null) {
+            evaluatedPropertiesList = new ArrayList<>();
+            CollectorContext.getInstance().add(UnEvaluatedPropertiesValidator.EVALUATED_PROPERTIES, evaluatedPropertiesList);
+        } else {
+            evaluatedPropertiesList = (List<String>) evaluatedProperties;
+        }
+        evaluatedPropertiesList.add(propertyPath);
+    }
+
     public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
         if (logger.isDebugEnabled()) debug(logger, node, rootNode, at);
 
@@ -71,6 +83,12 @@ public class AdditionalPropertiesValidator extends BaseJsonValidator implements 
         if (!node.isObject()) {
             // ignore no object
             return errors;
+        }
+        // if allowAdditionalProperties is true, add all the properties as evaluated.
+        if (allowAdditionalProperties) {
+            for (Iterator<String> it = node.fieldNames(); it.hasNext(); ) {
+                addToEvaluatedProperties(at + "." + it.next());
+            }
         }
 
         for (Iterator<String> it = node.fieldNames(); it.hasNext(); ) {
@@ -108,7 +126,7 @@ public class AdditionalPropertiesValidator extends BaseJsonValidator implements 
 
     @Override
     public void preloadJsonSchema() {
-        if(additionalPropertiesSchema!=null) {
+        if (additionalPropertiesSchema != null) {
             additionalPropertiesSchema.initializeValidators();
         }
     }
