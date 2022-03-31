@@ -188,6 +188,8 @@ public class OneOfValidator extends BaseJsonValidator implements JsonValidator {
 
                 childErrors.addAll(schemaErrors);
             }
+            Set<ValidationMessage> childNotRequiredErrors = childErrors.stream().filter(error -> !ValidatorTypeCode.REQUIRED.getValue().equals(error.getType())).collect(Collectors.toSet());
+
 
             // ensure there is always an "OneOf" error reported if number of valid schemas is not equal to 1.
             if (numberOfValidSchema > 1) {
@@ -200,6 +202,11 @@ public class OneOfValidator extends BaseJsonValidator implements JsonValidator {
 
             // ensure there is always an "OneOf" error reported if number of valid schemas is not equal to 1.
             else if (numberOfValidSchema < 1) {
+
+                if (!childNotRequiredErrors.isEmpty()) {
+                    childErrors = childNotRequiredErrors;
+                }
+
                 if (!childErrors.isEmpty()) {
                     if (childErrors.size() > 1) {
                         Set<ValidationMessage> notAdditionalPropertiesOnly = new LinkedHashSet<>(childErrors.stream()
@@ -308,8 +315,7 @@ public class OneOfValidator extends BaseJsonValidator implements JsonValidator {
             msg = msg.concat(schemaValue);
         }
 
-        return ValidationMessage.of(getValidatorType().getValue(), ValidatorTypeCode.ONE_OF ,
-                at, String.format("but more than one schemas {%s} are valid ",msg));
+        return ValidationMessage.of(getValidatorType().getValue(), ValidatorTypeCode.ONE_OF, at, msg);
     }
 
     @Override
